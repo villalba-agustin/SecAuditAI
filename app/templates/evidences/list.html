@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Evidencias{% endblock %}
+
+{% block content %}
+<div class="mb-3 flex-between">
+    <div>
+        <h1>Gestión de Evidencias Documentales</h1>
+        <p class="text-muted">Almacenamiento seguro, extracción de texto, cálculo de hash SHA-256 y análisis mediante IA local.</p>
+    </div>
+    <div>
+        <a href="/evidences/upload" class="btn btn-primary">+ Cargar Nueva Evidencia</a>
+    </div>
+</div>
+
+<div class="card p-0">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Nombre Original del Archivo</th>
+                    <th style="width: 120px;">Tipo / Formato</th>
+                    <th style="width: 110px;">Tamaño</th>
+                    <th style="width: 180px;">Hash SHA-256</th>
+                    <th style="width: 130px; text-align: center;">Texto Extraído</th>
+                    <th style="width: 120px; text-align: center;">Estado IA</th>
+                    <th style="width: 100px; text-align: center;">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in evidences %}
+                <tr>
+                    <td><strong class="font-mono">#{{ e.id }}</strong></td>
+                    <td>
+                        <a href="/evidences/{{ e.id }}"><strong>{{ e.original_filename }}</strong></a>
+                        <br><small class="text-muted">Cargado: {{ e.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                    </td>
+                    <td><span class="badge badge-category">{{ e.mime_type.split('/')[-1] }}</span></td>
+                    <td>{{ (e.file_size / 1024)|round(1) }} KB</td>
+                    <td>
+                        <code style="font-size: 0.75rem; color: var(--accent-cyan);" title="{{ e.sha256_hash }}">
+                            {{ e.sha256_hash[:16] }}...
+                        </code>
+                    </td>
+                    <td style="text-align: center;">
+                        {% if e.has_extractable_text %}
+                        <span class="badge badge-5">&#10003; Texto legible</span>
+                        {% else %}
+                        <span class="badge badge-warning" title="{{ e.extraction_notes }}">Sin texto extraíble</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if e.status == 'analizada' %}
+                        <span class="badge badge-5">&#10003; Analizada</span>
+                        {% elif e.status == 'cargada' %}
+                        <span class="badge badge-3">Pendiente</span>
+                        {% else %}
+                        <span class="badge badge-1">Error</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        <a href="/evidences/{{ e.id }}" class="btn btn-outline btn-sm">Ver Detalle</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        No hay evidencias cargadas en el sistema aún.<br>
+                        <a href="/evidences/upload" class="btn btn-primary btn-sm mt-2">Cargar la primera evidencia</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

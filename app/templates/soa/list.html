@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Declaración de Aplicabilidad (SoA){% endblock %}
+
+{% block content %}
+<div class="mb-3 flex-between">
+    <div>
+        <h1>Declaración de Aplicabilidad &mdash; SoA (Statement of Applicability)</h1>
+        <p class="text-muted">Gestión integral de los 93 controles de ISO/IEC 27001:2022, justificaciones de inclusión/exclusión y estado de implementación.</p>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="/soa/export/xlsx" class="btn btn-success">
+            <span>&#128196; Exportar a Excel (XLSX)</span>
+        </a>
+        <a href="/soa/export/csv" class="btn btn-outline">
+            <span>&#128203; Exportar CSV</span>
+        </a>
+    </div>
+</div>
+
+<!-- Filtros de la SoA -->
+<form method="GET" action="/soa" class="filters-bar">
+    <div style="flex: 1; min-width: 220px;">
+        <label class="form-label">Filtrar por texto</label>
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Buscar por código, título o descripción..." class="form-control">
+    </div>
+    <div style="min-width: 170px;">
+        <label class="form-label">Categoría</label>
+        <select name="category" class="form-control" onchange="this.form.submit()">
+            <option value="">Todas las Categorías</option>
+            <option value="Organizacional" {% if selected_category == 'Organizacional' %}selected{% endif %}>Organizacional (37)</option>
+            <option value="Personas" {% if selected_category == 'Personas' %}selected{% endif %}>Personas (8)</option>
+            <option value="Físico" {% if selected_category == 'Físico' %}selected{% endif %}>Físico (14)</option>
+            <option value="Tecnológico" {% if selected_category == 'Tecnológico' %}selected{% endif %}>Tecnológico (34)</option>
+        </select>
+    </div>
+    <div style="min-width: 150px;">
+        <label class="form-label">Condición SoA</label>
+        <select name="applicable" class="form-control" onchange="this.form.submit()">
+            <option value="">Todos los Estados</option>
+            <option value="true" {% if selected_applicable == 'true' %}selected{% endif %}>Solo Aplicables</option>
+            <option value="false" {% if selected_applicable == 'false' %}selected{% endif %}>Solo Excluidos</option>
+        </select>
+    </div>
+    <div style="align-self: flex-end;">
+        <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+        <a href="/soa" class="btn btn-outline">Limpiar</a>
+    </div>
+</form>
+
+<div class="card p-0">
+    <div class="card-header p-3" style="margin-bottom: 0;">
+        <h3>Registros de la Declaración de Aplicabilidad</h3>
+        <span class="badge badge-category">Mostrando {{ filtered_count }} de {{ total_items }} controles</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 85px;">Código</th>
+                    <th style="width: 120px;">Categoría</th>
+                    <th style="width: 220px;">Control</th>
+                    <th style="width: 90px; text-align: center;">¿Aplicable?</th>
+                    <th>Justificación Inclusión / Exclusión</th>
+                    <th style="width: 150px;">Estado Implementación</th>
+                    <th style="width: 110px; text-align: center;">Revisión</th>
+                    <th style="width: 80px; text-align: center;">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ctrl, ai_info in items %}
+                <tr>
+                    <td><strong class="font-mono text-cyan">{{ ctrl.code }}</strong></td>
+                    <td><span class="badge badge-category">{{ ctrl.category }}</span></td>
+                    <td>
+                        <a href="/controls/{{ ctrl.code }}"><strong>{{ ctrl.title }}</strong></a>
+                    </td>
+                    <td style="text-align: center;">
+                        {% if ctrl.is_applicable %}
+                        <span class="badge badge-5">Sí</span>
+                        {% else %}
+                        <span class="badge badge-na">Excluido</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ctrl.is_applicable %}
+                            <small class="text-muted" style="display: block;">Inclusión:</small>
+                            <span style="font-size: 0.85rem;">{{ ctrl.justification_inclusion or 'Sin justificación documentada' }}</span>
+                        {% else %}
+                            <small class="text-warning" style="display: block;">Exclusión:</small>
+                            <span style="font-size: 0.85rem; color: #FCA5A5;">{{ ctrl.justification_exclusion or 'Excluido sin justificación' }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if ctrl.implementation_status == 'Implementado' %}badge-5{% elif ctrl.implementation_status in ['En progreso', 'En implementación'] %}badge-3{% else %}badge-0{% endif %}">
+                            {{ ctrl.implementation_status }}
+                        </span>
+                        <div class="mt-1" style="font-size: 0.75rem; color: var(--text-muted);">
+                            Nivel: {{ ctrl.implementation_score }} ({{ ctrl.score_label() }})
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        {% if ctrl.human_reviewed %}
+                        <span class="badge badge-5">&#10003; Sí</span>
+                        {% else %}
+                        <span class="badge badge-3">&bull; No</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        <a href="/controls/{{ ctrl.code }}" class="btn btn-outline btn-sm">Editar</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">No hay controles que coincidan con la búsqueda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

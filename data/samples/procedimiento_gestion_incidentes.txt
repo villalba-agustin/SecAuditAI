@@ -1,0 +1,20 @@
+PROCEDIMIENTO OPERATIVO DE GESTIÓN Y RESPUESTA A INCIDENTES DE SEGURIDAD
+Código: PRO-INC-002
+Versión: 2.1
+Área: Centro de Operaciones de Seguridad (SOC) / CSIRT
+Clasificación: Uso Interno Confidencial
+
+1. PROPÓSITO Y ALCANCE
+Este procedimiento define las directrices y pasos secuenciales para la detección, notificación, contención, erradicación y recuperación ante eventos o incidentes de seguridad de la información que afecten a la organización.
+
+2. DETECCIÓN Y NOTIFICACIÓN
+Cualquier empleado o usuario de los sistemas que observe un evento anómalo, comportamiento sospechoso o potencial vulnerabilidad debe reportarlo inmediatamente a través del correo soc@innovacorp.local o la línea telefónica de emergencia 24/7.
+
+3. EVALUACIÓN Y CLASIFICACIÓN
+El equipo de analistas de seguridad evaluará el impacto en confidencialidad, integridad o disponibilidad, asignando una severidad: Baja, Media, Alta o Crítica. Se documentará el evento en la plataforma de tickets.
+
+4. RECOLECCIÓN Y PRESERVACIÓN DE EVIDENCIA
+Para incidentes de severidad Alta o Crítica, se procederá al aislamiento de los equipos comprometidos y la recolección forense de imágenes de memoria RAM y registros de red (logs), asegurando la cadena de custodia conforme a las buenas prácticas y requerimientos legales.
+
+5. LECCIONES APRENDIDAS
+Tras la resolución de cualquier incidente clasificado como Medio o superior, se celebrará una reunión de post-mortem en un plazo no mayor a 5 días hábiles para actualizar los controles y prevenir incidentes recurrentes.

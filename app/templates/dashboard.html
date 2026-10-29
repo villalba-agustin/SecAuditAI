@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Principal{% endblock %}
+
+{% block content %}
+<div class="mb-3 flex-between">
+    <div>
+        <h1>Tablero General de Cumplimiento ISO/IEC 27001:2022</h1>
+        <p class="text-muted">Estado en tiempo real del Sistema de Gestión de Seguridad de la Información (SGSI).</p>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="/evidences/upload" class="btn btn-primary">
+            <span>+ Cargar Evidencia</span>
+        </a>
+        <a href="/soa/export/xlsx" class="btn btn-outline">
+            <span>Exportar SoA (Excel)</span>
+        </a>
+    </div>
+</div>
+
+<!-- Primary Metric Cards -->
+<div class="grid-4">
+    <!-- Cumplimiento Global -->
+    <div class="stat-card cyan">
+        <div class="stat-label">Cumplimiento Interno Estimado</div>
+        <div class="stat-value text-cyan">{{ summary.combined_percentage }}%</div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: {{ summary.combined_percentage }}%;"></div>
+        </div>
+        <div class="stat-subtext">
+            <strong>Fórmula:</strong> Puntos / (Evaluados &times; 5)<br>
+            <strong>Denominador:</strong> {{ summary.combined_denominator }}
+        </div>
+    </div>
+
+    <!-- Cláusulas 4 a 10 -->
+    <div class="stat-card">
+        <div class="stat-label">Cláusulas Normativas (4 a 10)</div>
+        <div class="stat-value">{{ summary.req_stats.total }} <small style="font-size: 1rem; color: var(--text-muted);">requisitos</small></div>
+        <div class="stat-subtext">
+            <span>{{ summary.req_stats.evaluated_count }} evaluados</span> &bull; 
+            <span class="text-warning">{{ summary.req_stats.unassessed_count }} pendientes</span> &bull; 
+            <span>{{ summary.req_stats.na_count }} N/A</span>
+        </div>
+        <div class="mt-1">
+            <small>Cumplimiento cláusulas: <strong>{{ summary.req_stats.percentage }}%</strong></small>
+        </div>
+    </div>
+
+    <!-- Controles Anexo A -->
+    <div class="stat-card success">
+        <div class="stat-label">Controles Anexo A</div>
+        <div class="stat-value">{{ summary.ctrl_stats.total }} <small style="font-size: 1rem; color: var(--text-muted);">controles</small></div>
+        <div class="stat-subtext">
+            <span class="text-success">{{ summary.ctrl_stats.implemented_count }} implementados</span> &bull;
+            <span class="text-warning">{{ summary.ctrl_stats.partial_count }} parciales</span> &bull;
+            <span class="text-danger">{{ summary.ctrl_stats.pending_count }} pendientes</span>
+        </div>
+        <div class="mt-1">
+            <small>Aplicables: <strong>{{ summary.ctrl_stats.applicable_count }}</strong> / Excluidos: <strong>{{ summary.ctrl_stats.na_count }}</strong></small>
+        </div>
+    </div>
+
+    <!-- Evidencias & IA -->
+    <div class="stat-card warning">
+        <div class="stat-label">Evidencias & Propuestas IA</div>
+        <div class="stat-value">{{ summary.evidences_total }} <small style="font-size: 1rem; color: var(--text-muted);">archivos</small></div>
+        <div class="stat-subtext">
+            <span>{{ summary.evidences_analyzed }} analizados</span> &bull;
+            <span class="text-warning">{{ summary.evidences_pending_analysis }} por analizar</span>
+        </div>
+        <div class="mt-1">
+            <a href="/proposals" class="badge {% if summary.proposals_pending > 0 %}badge-3{% else %}badge-na{% endif %}">
+                {{ summary.proposals_pending }} propuestas IA pendientes de revisión
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Category & Maturity Breakdown -->
+<div class="grid-2">
+    <!-- Distribución de Controles por Categoría -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Distribución por Categorías Anexo A (93 Controles)</h3>
+            <a href="/controls" class="btn btn-outline btn-sm">Ver Catálogo</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Categoría</th>
+                        <th>Total</th>
+                        <th>Aplicables</th>
+                        <th>Implementados</th>
+                        <th>Progreso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat_name, cat_data in summary.ctrl_stats.by_category.items() %}
+                    <tr>
+                        <td><strong>{{ cat_name }}</strong></td>
+                        <td>{{ cat_data.total }}</td>
+                        <td>{{ cat_data.applicable }}</td>
+                        <td><span class="text-success font-weight-bold">{{ cat_data.implemented }}</span></td>
+                        <td style="min-width: 140px;">
+                            {% set pct = (cat_data.implemented / cat_data.applicable * 100)|round(1) if cat_data.applicable > 0 else 0 %}
+                            <div class="d-flex align-center gap-1">
+                                <div class="progress-container" style="flex: 1; margin: 0;">
+                                    <div class="progress-bar success" style="width: {{ pct }}%;"></div>
+                                </div>
+                                <small>{{ pct }}%</small>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Escala Interna de Madurez -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Nivel de Cumplimiento en Cláusulas (Escala Interna)</h3>
+            <a href="/requirements" class="btn btn-outline btn-sm">Ver Requisitos</a>
+        </div>
+        <p class="text-muted" style="font-size: 0.85rem;">Distribución de las 30 subcláusulas de los capítulos 4 al 10:</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <div class="flex-between">
+                <span><span class="badge badge-5">Nivel 5: Implementado</span></span>
+                <strong>{{ summary.req_stats.score_counts['5_implemented'] }}</strong>
+            </div>
+            <div class="flex-between">
+                <span><span class="badge badge-4">Nivel 4: Mayormente implementado</span></span>
+                <strong>{{ summary.req_stats.score_counts['4_mostly'] }}</strong>
+            </div>
+            <div class="flex-between">
+                <span><span class="badge badge-3">Nivel 3: Parcialmente implementado</span></span>
+                <strong>{{ summary.req_stats.score_counts['3_partial'] }}</strong>
+            </div>
+            <div class="flex-between">
+                <span><span class="badge badge-2">Nivel 2: Inicial / Ad-hoc</span></span>
+                <strong>{{ summary.req_stats.score_counts['2_initial'] }}</strong>
+            </div>
+            <div class="flex-between">
+                <span><span class="badge badge-1">Nivel 1: No implementado</span></span>
+                <strong class="text-danger">{{ summary.req_stats.score_counts['1_not_implemented'] }}</strong>
+            </div>
+            <div class="flex-between">
+                <span><span class="badge badge-0">Nivel 0: No evaluado</span></span>
+                <strong class="text-muted">{{ summary.req_stats.score_counts['0_unassessed'] }}</strong>
+            </div>
+            <div class="flex-between">
+                <span><span class="badge badge-na">N/A: No aplicable</span></span>
+                <strong class="text-muted">{{ summary.req_stats.score_counts['na'] }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Brechas Críticas & Registro de Actividades -->
+<div class="grid-2">
+    <!-- Principales Brechas Detectadas -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Alertas y Principales Brechas</h3>
+            <span class="badge badge-1">{{ summary.top_gaps|length }} alertas prioritarias</span>
+        </div>
+        {% if summary.top_gaps %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Elemento</th>
+                        <th>Título</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for gap in summary.top_gaps %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-category">{{ gap.type }}</span><br>
+                            <code>{{ gap.code }}</code>
+                        </td>
+                        <td>{{ gap.title }}</td>
+                        <td><span class="badge badge-1">{{ gap.status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">No se registran brechas críticas de nivel 1 pendientes.</p>
+        {% endif %}
+    </div>
+
+    <!-- Registro de Actividades Recientes (AuditLog) -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Trazabilidad y Últimas Actividades</h3>
+            <small class="text-muted">Registro AuditLog</small>
+        </div>
+        {% if summary.recent_activities %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for act in summary.recent_activities %}
+            <div style="padding: 0.6rem 0.8rem; background: var(--bg-main); border-radius: var(--radius-sm); border-left: 3px solid var(--primary);">
+                <div class="flex-between" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.2rem;">
+                    <span><strong>{{ act.action }}</strong> &bull; {{ act.user_identifier }}</span>
+                    <span>{{ act.timestamp.strftime('%d/%m/%Y %H:%M') }}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-main);">
+                    {{ act.details }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">Aún no hay actividades registradas.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

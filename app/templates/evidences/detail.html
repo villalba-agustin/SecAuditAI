@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Evidencia: {{ evidence.original_filename }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="/evidences" class="btn btn-outline btn-sm">&larr; Volver al listado de evidencias</a>
+</div>
+
+<div class="mb-3 flex-between">
+    <div>
+        <div class="d-flex align-center gap-1 mb-1">
+            <span class="badge badge-category">Evidencia #{{ evidence.id }}</span>
+            <span class="badge badge-primary">{{ evidence.mime_type }}</span>
+            {% if evidence.status == 'analizada' %}
+            <span class="badge badge-5">&#10003; Analizada con IA</span>
+            {% else %}
+            <span class="badge badge-3">&bull; Pendiente de Análisis</span>
+            {% endif %}
+        </div>
+        <h1>{{ evidence.original_filename }}</h1>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="/evidences/{{ evidence.id }}/download" class="btn btn-outline">
+            <span>&#128190; Descargar Archivo</span>
+        </a>
+        <form method="POST" action="/evidences/{{ evidence.id }}/analyze" style="display: inline;">
+            <button type="submit" class="btn btn-primary">
+                <span>&#129302; Ejecutar Análisis IA (Ollama)</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="grid-3">
+    <!-- Main Content: Extracted Text and AI Analysis (col-span 2) -->
+    <div style="grid-column: span 2;">
+        <!-- Card: Texto Extraído -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Contenido Textual Extraído del Documento</h3>
+                <small class="text-muted">{{ evidence.extraction_notes or '' }}</small>
+            </div>
+            {% if evidence.has_extractable_text and evidence.extracted_text %}
+            <div style="max-height: 280px; overflow-y: auto; background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.88rem; white-space: pre-wrap; font-family: var(--font-sans); color: #D1D5DB;">{{ evidence.extracted_text }}</div>
+            {% else %}
+            <div class="alert alert-warning">
+                <strong>Atención:</strong> El documento no posee capas de texto digital extraíble (archivo escaneado o imagen pura). Para analizarlo con la IA local, proporcione un archivo con texto digital legible (PDF seleccionable, DOCX, TXT o MD).
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Card: Resultados del Análisis de IA -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Análisis Especializado ISO/IEC 27001:2022</h3>
+                <small class="text-muted">Skill: iso27001-evidence-review</small>
+            </div>
+            {% if analyses %}
+                {% for a in analyses %}
+                <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
+                    <div class="flex-between mb-2">
+                        <div>
+                            <strong>Modelo: {{ a.model_name }}</strong>
+                            <span class="badge {% if a.status == 'simulado' %}badge-warning{% else %}badge-5{% endif %} ml-1">
+                                Modo: {{ a.status }}
+                            </span>
+                        </div>
+                        <small class="text-muted">{{ a.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                    </div>
+
+                    <div class="mb-3" style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); border-left: 3px solid var(--primary);">
+                        <strong style="color: var(--primary);">Resumen Ejecutivo de la Evidencia:</strong>
+                        <p class="mt-1" style="margin-bottom: 0;">{{ a.summary }}</p>
+                    </div>
+
+                    <div class="grid-2 mb-3">
+                        <!-- Fortalezas -->
+                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1rem; border-radius: var(--radius-sm);">
+                            <h4 class="text-success mb-2">&#10003; Fortalezas Detectadas</h4>
+                            <ul style="padding-left: 1.25rem; font-size: 0.85rem;">
+                                {% for s in a.get_strengths() %}
+                                <li style="margin-bottom: 0.35rem;">{{ s }}</li>
+                                {% else %}
+                                <li class="text-muted">No se detectaron fortalezas destacadas.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Brechas -->
+                        <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 1rem; border-radius: var(--radius-sm);">
+                            <h4 class="text-danger mb-2">&#9888; Brechas / Omisiones frente a Norma</h4>
+                            <ul style="padding-left: 1.25rem; font-size: 0.85rem;">
+                                {% for g in a.get_gaps() %}
+                                <li style="margin-bottom: 0.35rem;">{{ g }}</li>
+                                {% else %}
+                                <li class="text-muted">No se identificaron brechas directas.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="grid-2 mb-3">
+                        <!-- Acciones Recomendadas -->
+                        <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 1rem; border-radius: var(--radius-sm);">
+                            <h4 style="color: var(--accent-cyan);" class="mb-2">&#10140; Acciones Correctivas Recomendadas</h4>
+                            <ul style="padding-left: 1.25rem; font-size: 0.85rem;">
+                                {% for r in a.get_recommendations() %}
+                                <li style="margin-bottom: 0.35rem;">{{ r }}</li>
+                                {% else %}
+                                <li class="text-muted">Sin recomendaciones pendientes.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Información Faltante -->
+                        <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 1rem; border-radius: var(--radius-sm);">
+                            <h4 class="text-warning mb-2">&#128269; Información Faltante para Concluir</h4>
+                            <ul style="padding-left: 1.25rem; font-size: 0.85rem;">
+                                {% for m in a.get_missing_info() %}
+                                <li style="margin-bottom: 0.35rem;">{{ m }}</li>
+                                {% else %}
+                                <li class="text-muted">Información suficiente aportada.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Propuestas Generadas en este análisis -->
+                    {% if a.proposals %}
+                    <h4 class="mb-2">Propuestas de Mapeo y Niveles Sugeridos</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        {% for p in a.proposals %}
+                        <div class="proposal-box {% if p.status == 'pending' %}pending{% endif %}">
+                            <div class="flex-between">
+                                <div>
+                                    {% if p.target_type == 'requirement' %}
+                                    <span class="badge badge-primary">Requisito Cláusula {{ p.requirement.code }}</span>
+                                    <strong>{{ p.requirement.title }}</strong>
+                                    {% else %}
+                                    <span class="badge badge-primary">Control Anexo A {{ p.control.code }}</span>
+                                    <strong>{{ p.control.title }}</strong>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <span class="badge badge-3">Nivel Sugerido: {{ p.suggested_score }}</span>
+                                    <span class="badge badge-category">Confianza: {{ (p.confidence * 100)|round(0) }}%</span>
+                                </div>
+                            </div>
+                            <p class="mt-1" style="font-size: 0.85rem;">{{ p.rationale }}</p>
+                            {% if p.quote %}
+                            <div class="quote-box">"{{ p.quote }}"</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted mb-3">Esta evidencia aún no ha sido analizada por la IA local.</p>
+                    <form method="POST" action="/evidences/{{ evidence.id }}/analyze">
+                        <button type="submit" class="btn btn-primary">Iniciar Análisis Ahora</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar: Metadatos & Mappings -->
+    <div>
+        <!-- Metadatos de Seguridad -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Integridad y Metadatos</h3>
+            </div>
+            <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                <div>
+                    <span class="text-muted" style="display: block;">Hash Criptográfico SHA-256:</span>
+                    <code style="font-size: 0.72rem; word-break: break-all; color: var(--accent-cyan);">{{ evidence.sha256_hash }}</code>
+                </div>
+                <div>
+                    <span class="text-muted">Tamaño en Disco:</span>
+                    <strong>{{ (evidence.file_size / 1024)|round(1) }} KB ({{ evidence.file_size }} bytes)</strong>
+                </div>
+                <div>
+                    <span class="text-muted">Tipo MIME Detectado:</span>
+                    <strong>{{ evidence.mime_type }}</strong>
+                </div>
+                <div>
+                    <span class="text-muted">Nombre Interno Seguro:</span>
+                    <code style="font-size: 0.72rem; word-break: break-all;">{{ evidence.stored_filename }}</code>
+                </div>
+                <div>
+                    <span class="text-muted">Fecha de Carga:</span>
+                    <strong>{{ evidence.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapeos Existentes -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Elementos Vinculados</h3>
+            </div>
+            {% if mappings %}
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for m in mappings %}
+                <div style="padding: 0.6rem; background: var(--bg-main); border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.85rem;">
+                    {% if m.requirement %}
+                    <a href="/requirements/{{ m.requirement.code }}"><strong>Requisito {{ m.requirement.code }}</strong></a>: {{ m.requirement.title }}
+                    {% elif m.control %}
+                    <a href="/controls/{{ m.control.code }}"><strong>Control {{ m.control.code }}</strong></a>: {{ m.control.title }}
+                    {% endif %}
+                    <div class="mt-1 flex-between text-muted" style="font-size: 0.75rem;">
+                        <span>Mapeado por: {{ m.mapped_by }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">Sin elementos normativos vinculados.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecAuditAI{% endblock %} | Gestión ISO/IEC 27001:2022</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="brand">
+                <span class="brand-badge">SecAudit</span>AI
+            </a>
+            <nav>
+                <ul class="nav-links">
+                    <li class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                        <a href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'requirements' %}active{% endif %}">
+                        <a href="/requirements">Cláusulas 4-10</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'controls' %}active{% endif %}">
+                        <a href="/controls">Anexo A (93)</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'soa' %}active{% endif %}">
+                        <a href="/soa">SoA</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'evidences' %}active{% endif %}">
+                        <a href="/evidences">Evidencias</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'proposals' %}active{% endif %}">
+                        <a href="/proposals">Propuestas IA</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'settings' %}active{% endif %}">
+                        <a href="/settings/ollama">Ollama / Skill</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container my-4" style="flex: 1; padding-top: 1.5rem; padding-bottom: 2rem;">
+        {% block content %}{% endblock %}
+        
+        <div class="iso-disclaimer">
+            <p><strong>Aviso Metodológico y Legal:</strong> SecAuditAI es un sistema interno de diagnóstico, documentación y apoyo técnico conforme a ISO/IEC 27001:2022 (incluida Enmienda 1:2024). Las valoraciones generadas por la IA local son propuestas preliminares que requieren revisión humana y no constituyen una certificación formal de conformidad ni sustituyen la labor de una entidad de certificación acreditada.</p>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container footer-content">
+            <div>
+                <strong>SecAuditAI v1.0</strong> | Auditoría & Cumplimiento ISO/IEC 27001:2022 con IA Local
+            </div>
+            <div>
+                <span>Ambiente Seguro Local (127.0.0.1)</span> | <span>Ollama Local Engine</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Bandeja de Revisión de Propuestas IA{% endblock %}
+
+{% block content %}
+<div class="mb-3 flex-between">
+    <div>
+        <h1>Bandeja de Revisión Humana de Propuestas IA</h1>
+        <p class="text-muted">Supervisión obligatoria: valide, modifique o rechace las propuestas generadas por la IA local antes de incorporarlas al estado oficial.</p>
+    </div>
+</div>
+
+<!-- Filtros de Estado -->
+<div class="filters-bar">
+    <div class="d-flex gap-1">
+        <a href="/proposals?status=pending" class="btn {% if selected_status == 'pending' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">
+            Pendientes
+        </a>
+        <a href="/proposals?status=accepted" class="btn {% if selected_status == 'accepted' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">
+            Aceptadas
+        </a>
+        <a href="/proposals?status=rejected" class="btn {% if selected_status == 'rejected' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">
+            Rechazadas
+        </a>
+        <a href="/proposals?status=all" class="btn {% if selected_status == 'all' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">
+            Todas
+        </a>
+    </div>
+</div>
+
+{% if proposals %}
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% for p in proposals %}
+        <div class="card p-4" style="{% if p.status == 'pending' %}border-left: 4px solid var(--warning);{% elif p.status == 'accepted' %}border-left: 4px solid var(--success);{% else %}border-left: 4px solid var(--danger);{% endif %}">
+            <div class="flex-between mb-2">
+                <div>
+                    {% if p.target_type == 'requirement' %}
+                    <span class="badge badge-category">Requisito Cláusula {{ p.requirement.code }}</span>
+                    <a href="/requirements/{{ p.requirement.code }}" style="font-size: 1.15rem; font-weight: 700; margin-left: 0.5rem;">
+                        {{ p.requirement.title }}
+                    </a>
+                    {% else %}
+                    <span class="badge badge-category">Control Anexo A {{ p.control.code }}</span>
+                    <a href="/controls/{{ p.control.code }}" style="font-size: 1.15rem; font-weight: 700; margin-left: 0.5rem;">
+                        {{ p.control.title }}
+                    </a>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="badge {% if p.status == 'pending' %}badge-3{% elif p.status == 'accepted' %}badge-5{% else %}badge-1{% endif %}" style="font-size: 0.85rem;">
+                        Estado: {{ p.status|upper }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Comparación de niveles -->
+            <div class="grid-3 my-2" style="background: var(--bg-main); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                <div>
+                    <small class="text-muted" style="display: block;">Nivel Actual Confirmado:</small>
+                    {% if p.target_type == 'requirement' %}
+                    <strong>Nivel {{ p.requirement.compliance_score }} ({{ p.requirement.score_label() }})</strong>
+                    {% else %}
+                    <strong>Nivel {{ p.control.implementation_score }} ({{ p.control.score_label() }})</strong>
+                    {% endif %}
+                </div>
+                <div>
+                    <small class="text-muted" style="display: block;">Propuesta Sugerida por IA:</small>
+                    <strong class="text-warning">Nivel {{ p.suggested_score }}</strong> 
+                    <small class="text-muted">({{ (p.confidence * 100)|round(0) }}% confianza)</small>
+                </div>
+                <div>
+                    <small class="text-muted" style="display: block;">Evidencia Origen:</small>
+                    <a href="/evidences/{{ p.analysis.evidence.id }}">
+                        {{ p.analysis.evidence.original_filename }}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Fundamentación y Cita -->
+            <div class="my-2">
+                <p><strong>Fundamentación Técnica:</strong> {{ p.rationale }}</p>
+                {% if p.quote %}
+                <div class="quote-box">"{{ p.quote }}"</div>
+                {% endif %}
+            </div>
+
+            {% if p.status == 'pending' %}
+            <!-- Acciones de Decisión Humana -->
+            <div style="background: rgba(255, 255, 255, 0.02); padding: 1rem; border-radius: var(--radius-sm); border-top: 1px solid var(--border-color); margin-top: 1rem;">
+                <h4 class="mb-2">Decisión del Auditor:</h4>
+                <div class="d-flex gap-2 flex-wrap">
+                    <!-- Form Aceptar -->
+                    <form method="POST" action="/proposals/{{ p.id }}/review" style="display: inline-block;">
+                        <input type="hidden" name="action" value="accept">
+                        <input type="hidden" name="reviewer_name" value="Auditor ISO">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            &#10003; Aceptar Propuesta (Nivel {{ p.suggested_score }})
+                        </button>
+                    </form>
+
+                    <!-- Form Rechazar -->
+                    <form method="POST" action="/proposals/{{ p.id }}/review" style="display: inline-block;">
+                        <input type="hidden" name="action" value="reject">
+                        <input type="hidden" name="reviewer_name" value="Auditor ISO">
+                        <input type="hidden" name="reviewer_notes" value="Propuesta descartada por el auditor tras revisión documental.">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            &#10005; Descartar / Rechazar
+                        </button>
+                    </form>
+
+                    <!-- Form Modificar -->
+                    <form method="POST" action="/proposals/{{ p.id }}/review" class="d-flex align-center gap-1" style="flex: 1; min-width: 280px;">
+                        <input type="hidden" name="action" value="modify">
+                        <input type="hidden" name="reviewer_name" value="Auditor ISO">
+                        <select name="modified_score" class="form-control" style="width: auto; padding: 0.35rem 0.6rem; font-size: 0.85rem;" required>
+                            <option value="">Ajustar Nivel...</option>
+                            <option value="1">Nivel 1</option>
+                            <option value="2">Nivel 2</option>
+                            <option value="3">Nivel 3</option>
+                            <option value="4">Nivel 4</option>
+                            <option value="5">Nivel 5</option>
+                        </select>
+                        <input type="text" name="reviewer_notes" placeholder="Motivo del ajuste..." class="form-control" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;" required>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            Modificar y Guardar
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div style="font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem;">
+                Revisado por <strong>{{ p.reviewed_by or 'Auditor' }}</strong> el {{ p.reviewed_at.strftime('%d/%m/%Y %H:%M') if p.reviewed_at else '-' }}.
+                {% if p.reviewer_notes %}
+                <span>Observaciones: <em>{{ p.reviewer_notes }}</em></span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card text-center py-5">
+        <h3 class="text-muted mb-2">No hay propuestas en esta categoría</h3>
+        <p class="text-muted">Las propuestas se generan automáticamente al procesar evidencias documentales.</p>
+        <a href="/evidences" class="btn btn-primary btn-sm mt-2">Ir a Evidencias</a>
+    </div>
+{% endif %}
+{% endblock %}

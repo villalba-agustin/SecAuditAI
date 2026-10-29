@@ -1,0 +1,86 @@
+services:
+
+  # ── Ollama – IA local ────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: secauditai_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    # GPU support (descomenta si tenés NVIDIA y docker-nvidia-toolkit instalado)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ── Descargador de modelo (se ejecuta una sola vez) ─────────────────────────
+  # Espera activamente a que Ollama esté listo (sin límite de tiempo) y luego
+  # descarga el modelo. La app no arranca hasta que este servicio finaliza OK.
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: secauditai_ollama_pull
+    restart: "no"
+    depends_on:
+      - ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Esperando a que Ollama esté disponible..."
+        until wget -qO- http://ollama:11434/api/tags > /dev/null 2>&1; do
+          echo "  Ollama aún no responde, reintentando en 5s..."
+          sleep 5
+        done
+        echo "Ollama listo. Descargando modelo qwen2.5:4b ..."
+        OLLAMA_HOST=http://ollama:11434 ollama pull qwen2.5:4b
+        echo "Modelo listo."
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # ── SecAuditAI – Aplicación principal ───────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secauditai_app
+    restart: unless-stopped
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persistencia de la base de datos y los archivos subidos
+      - app_db:/app/data/db
+      - app_uploads:/app/data/uploads
+    environment:
+      APP_ENV: production
+      DEBUG: "False"
+      DATABASE_URL: sqlite:////app/data/db/secauditai.db
+      UPLOAD_DIR: /app/data/uploads
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: qwen2.5:4b
+      OLLAMA_TIMEOUT_SECONDS: "180"
+      # Credenciales por defecto – cambialas en producción real
+      DEFAULT_ADMIN_USER: admin
+      DEFAULT_ADMIN_PASSWORD: SecAudit2025!
+      SECRET_KEY: secauditai_secret_change_me_in_production
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  ollama_data:
+    driver: local
+  app_db:
+    driver: local
+  app_uploads:
+    driver: local

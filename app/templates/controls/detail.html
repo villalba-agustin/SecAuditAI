@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Control {{ ctrl.code }} - {{ ctrl.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="/controls" class="btn btn-outline btn-sm">&larr; Volver al catálogo de controles</a>
+</div>
+
+<div class="mb-3 flex-between">
+    <div>
+        <div class="d-flex align-center gap-1 mb-1">
+            <span class="badge badge-primary">{{ ctrl.category }}</span>
+            <span class="badge badge-category">{{ ctrl.normative_ref }}</span>
+            {% if ctrl.human_reviewed %}
+            <span class="badge badge-5">&#10003; Revisión Humana Confirmada</span>
+            {% else %}
+            <span class="badge badge-3">&bull; Pendiente de Confirmación Humana</span>
+            {% endif %}
+        </div>
+        <h1>{{ ctrl.code }} &mdash; {{ ctrl.title }}</h1>
+    </div>
+    <div>
+        {% if not ctrl.is_applicable or ctrl.implementation_score == -1 %}
+        <span class="badge badge-na" style="font-size: 0.95rem; padding: 0.4rem 0.8rem;">Excluido (No aplicable)</span>
+        {% else %}
+        <span class="badge badge-{{ ctrl.implementation_score }}" style="font-size: 0.95rem; padding: 0.4rem 0.8rem;">
+            Nivel {{ ctrl.implementation_score }} - {{ ctrl.score_label() }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-3">
+    <!-- Main Form & Content (col-span 2) -->
+    <div style="grid-column: span 2;">
+        <!-- Card: Descripción del Control -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Objetivo y Alcance del Control</h3>
+            </div>
+            <p style="font-size: 1.05rem; line-height: 1.7; color: #E5E7EB;">
+                {{ ctrl.description }}
+            </p>
+        </div>
+
+        <!-- Card: Declaración de Aplicabilidad y Evaluación -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Gestión de Aplicabilidad (SoA) y Nivel de Implementación</h3>
+                <small class="text-muted">Decisión oficial de la organización</small>
+            </div>
+            <form method="POST" action="/controls/{{ ctrl.code }}/evaluate">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">¿Es Aplicable este Control?</label>
+                        <select name="is_applicable" class="form-control applicable-toggle">
+                            <option value="true" {% if ctrl.is_applicable and ctrl.implementation_score != -1 %}selected{% endif %}>Sí, Control Aplicable</option>
+                            <option value="false" {% if not ctrl.is_applicable or ctrl.implementation_score == -1 %}selected{% endif %}>No, Control Excluido</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Estado de Implementación</label>
+                        <select name="implementation_status" class="form-control">
+                            <option value="No iniciado" {% if ctrl.implementation_status == 'No iniciado' %}selected{% endif %}>No iniciado</option>
+                            <option value="En planificación" {% if ctrl.implementation_status == 'En planificación' %}selected{% endif %}>En planificación</option>
+                            <option value="En implementación" {% if ctrl.implementation_status == 'En implementación' %}selected{% endif %}>En implementación</option>
+                            <option value="Implementado" {% if ctrl.implementation_status == 'Implementado' %}selected{% endif %}>Implementado</option>
+                            <option value="No aplicable" {% if ctrl.implementation_status == 'No aplicable' %}selected{% endif %}>No aplicable</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Nivel de Madurez Interna (0 a 5)</label>
+                        <select name="implementation_score" class="form-control">
+                            <option value="0" {% if ctrl.implementation_score == 0 %}selected{% endif %}>0 - No evaluado</option>
+                            <option value="1" {% if ctrl.implementation_score == 1 %}selected{% endif %}>1 - No implementado</option>
+                            <option value="2" {% if ctrl.implementation_score == 2 %}selected{% endif %}>2 - Inicial / Ad-hoc</option>
+                            <option value="3" {% if ctrl.implementation_score == 3 %}selected{% endif %}>3 - Parcialmente implementado</option>
+                            <option value="4" {% if ctrl.implementation_score == 4 %}selected{% endif %}>4 - Mayormente implementado</option>
+                            <option value="5" {% if ctrl.implementation_score == 5 %}selected{% endif %}>5 - Implementado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Responsable del Control</label>
+                        <input type="text" name="responsible" value="{{ ctrl.responsible or '' }}" class="form-control" placeholder="Ej. Equipo de Redes / Infraestructura">
+                    </div>
+                </div>
+
+                <div class="form-group inclusion-justification-group" style="{% if not ctrl.is_applicable or ctrl.implementation_score == -1 %}display: none;{% endif %}">
+                    <label class="form-label">Justificación de Inclusión en la SoA</label>
+                    <textarea name="justification_inclusion" class="form-control" placeholder="Motivo de negocio, contractual, normativo o de gestión de riesgos para incluir este control...">{{ ctrl.justification_inclusion or '' }}</textarea>
+                </div>
+
+                <div class="form-group na-justification-group" style="{% if ctrl.is_applicable and ctrl.implementation_score != -1 %}display: none;{% endif %}">
+                    <label class="form-label text-warning">Justificación de Exclusión en la SoA (Obligatoria)</label>
+                    <textarea name="justification_exclusion" class="form-control" placeholder="Indique el análisis de riesgos o justificación técnica por la cual este control no aplica...">{{ ctrl.justification_exclusion or '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Resumen de Implementación Práctica</label>
+                    <textarea name="implementation_summary" class="form-control" placeholder="Describa brevemente cómo opera el control en la práctica, tecnologías usadas, políticas o procedimientos aplicables...">{{ ctrl.implementation_summary or '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Guardar y Confirmar Evaluación Humana
+                </button>
+            </form>
+        </div>
+
+        <!-- Card: Propuestas de IA -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Propuestas de Inteligencia Artificial Local</h3>
+                <span class="badge badge-category">{{ proposals|length }} propuestas</span>
+            </div>
+            {% if proposals %}
+                {% for p in proposals %}
+                <div class="proposal-box {% if p.status == 'pending' %}pending{% endif %}">
+                    <div class="proposal-header">
+                        <div>
+                            <strong>Nivel Propuesto por IA: Nivel {{ p.suggested_score }}</strong> 
+                            <span class="badge {% if p.status == 'pending' %}badge-3{% elif p.status == 'accepted' %}badge-5{% else %}badge-1{% endif %}">
+                                Estado: {{ p.status }}
+                            </span>
+                        </div>
+                        <small class="text-muted">Confianza: {{ (p.confidence * 100)|round(0) }}%</small>
+                    </div>
+                    <p style="font-size: 0.9rem;"><strong>Fundamentación:</strong> {{ p.rationale }}</p>
+                    {% if p.quote %}
+                    <div class="quote-box">
+                        "{{ p.quote }}"
+                    </div>
+                    {% endif %}
+                    {% if p.status == 'pending' %}
+                    <div class="mt-2 flex-between">
+                        <small class="text-muted">La sugerencia no modifica automáticamente la decisión de SoA hasta ser aprobada.</small>
+                        <a href="/proposals" class="btn btn-warning btn-sm">Revisar Propuesta</a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted text-center py-3">No hay propuestas de IA registradas para este control.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+        <!-- Evidencias -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Evidencias Asociadas</h3>
+                <a href="/evidences/upload?target_ctrl={{ ctrl.code }}" class="btn btn-outline btn-sm">+ Vincular</a>
+            </div>
+            {% if mappings %}
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                {% for m in mappings %}
+                <div style="background: var(--bg-main); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div class="flex-between">
+                        <a href="/evidences/{{ m.evidence.id }}"><strong>{{ m.evidence.original_filename }}</strong></a>
+                        <span class="badge badge-category">{{ m.mapped_by }}</span>
+                    </div>
+                    {% if m.reason %}
+                    <small class="text-muted mt-1" style="display: block;">{{ m.reason }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">Sin evidencias vinculadas aún.</p>
+            {% endif %}
+        </div>
+
+        <!-- Historial -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Historial de Cambios</h3>
+            </div>
+            {% if assessments %}
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                {% for a in assessments %}
+                <div style="font-size: 0.8rem; padding: 0.5rem; background: var(--bg-main); border-radius: var(--radius-sm);">
+                    <div class="flex-between text-muted">
+                        <span>{{ a.evaluated_by }}</span>
+                        <span>{{ a.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                    <div>Cambio de nivel: <strong>{{ a.previous_score }} &rarr; {{ a.new_score }}</strong></div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ a.justification }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">Sin historial registrado.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

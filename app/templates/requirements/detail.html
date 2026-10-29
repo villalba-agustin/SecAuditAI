@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Requisito {{ req.code }} - {{ req.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="/requirements" class="btn btn-outline btn-sm">&larr; Volver al catálogo de requisitos</a>
+</div>
+
+<div class="mb-3 flex-between">
+    <div>
+        <div class="d-flex align-center gap-1 mb-1">
+            <span class="badge badge-primary">Cláusula {{ req.clause_number }}</span>
+            <span class="badge badge-category">{{ req.normative_ref }}</span>
+        </div>
+        <h1>{{ req.code }} &mdash; {{ req.title }}</h1>
+    </div>
+    <div>
+        {% if not req.is_applicable or req.compliance_score == -1 %}
+        <span class="badge badge-na" style="font-size: 0.95rem; padding: 0.4rem 0.8rem;">No aplicable</span>
+        {% else %}
+        <span class="badge badge-{{ req.compliance_score }}" style="font-size: 0.95rem; padding: 0.4rem 0.8rem;">
+            Nivel {{ req.compliance_score }} - {{ req.score_label() }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-3">
+    <!-- Main Detail & Evaluation Form (col-span 2) -->
+    <div style="grid-column: span 2;">
+        <!-- Card: Descripción Normativa -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Texto y Alcance del Requisito</h3>
+            </div>
+            <p style="font-size: 1.05rem; line-height: 1.7; color: #E5E7EB;">
+                {{ req.description }}
+            </p>
+            {% if req.code in ['4.1', '4.2'] %}
+            <div class="alert alert-info mt-2">
+                <strong>Enmienda 1:2024 (Acción por el Clima):</strong> Recuerde que debe determinarse expresamente si el cambio climático es una cuestión relevante para el contexto de la organización (4.1) o si las partes interesadas tienen requisitos relacionados (4.2).
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Card: Formulario de Evaluación Humana -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Registro y Actualización de Evaluación Humana</h3>
+                <small class="text-muted">Decisión oficial auditada</small>
+            </div>
+            <form method="POST" action="/requirements/{{ req.code }}/evaluate">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">¿Es Aplicable este requisito?</label>
+                        <select name="is_applicable" class="form-control applicable-toggle">
+                            <option value="true" {% if req.is_applicable and req.compliance_score != -1 %}selected{% endif %}>Sí, Requisito Aplicable</option>
+                            <option value="false" {% if not req.is_applicable or req.compliance_score == -1 %}selected{% endif %}>No Aplicable (Requiere Justificación)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nivel de Cumplimiento (Escala Interna)</label>
+                        <select name="compliance_score" class="form-control">
+                            <option value="0" {% if req.compliance_score == 0 %}selected{% endif %}>0 - No evaluado</option>
+                            <option value="1" {% if req.compliance_score == 1 %}selected{% endif %}>1 - No implementado</option>
+                            <option value="2" {% if req.compliance_score == 2 %}selected{% endif %}>2 - Inicial / Ad-hoc</option>
+                            <option value="3" {% if req.compliance_score == 3 %}selected{% endif %}>3 - Parcialmente implementado</option>
+                            <option value="4" {% if req.compliance_score == 4 %}selected{% endif %}>4 - Mayormente implementado</option>
+                            <option value="5" {% if req.compliance_score == 5 %}selected{% endif %}>5 - Implementado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group na-justification-group" style="{% if req.is_applicable and req.compliance_score != -1 %}display: none;{% endif %}">
+                    <label class="form-label text-warning">Justificación de No Aplicabilidad (Obligatoria)</label>
+                    <textarea name="na_justification" class="form-control" placeholder="Indique el motivo técnico por el cual este requisito se excluye...">{{ req.na_justification or '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Observaciones de Auditoría / Justificación Técnica</label>
+                    <textarea name="observations" class="form-control" placeholder="Detalle los hallazgos de auditoría, contexto, acuerdos o planes de acción...">{{ req.observations or '' }}</textarea>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Responsable Asignado</label>
+                        <input type="text" name="responsible" value="{{ req.responsible or '' }}" class="form-control" placeholder="Ej. Oficial de Seguridad / CISO">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            Guardar Evaluación
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Card: Propuestas de IA Asociadas -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Propuestas Generadas por la IA Local</h3>
+                <span class="badge badge-category">{{ proposals|length }} registradas</span>
+            </div>
+            {% if proposals %}
+                {% for p in proposals %}
+                <div class="proposal-box {% if p.status == 'pending' %}pending{% endif %}">
+                    <div class="proposal-header">
+                        <div>
+                            <strong>Nivel Sugerido por IA: Nivel {{ p.suggested_score }}</strong> 
+                            <span class="badge {% if p.status == 'pending' %}badge-3{% elif p.status == 'accepted' %}badge-5{% else %}badge-1{% endif %}">
+                                Estado: {{ p.status }}
+                            </span>
+                        </div>
+                        <small class="text-muted">Confianza estimada: {{ (p.confidence * 100)|round(0) }}%</small>
+                    </div>
+                    <p style="font-size: 0.9rem;"><strong>Fundamento:</strong> {{ p.rationale }}</p>
+                    {% if p.quote %}
+                    <div class="quote-box">
+                        "{{ p.quote }}"
+                    </div>
+                    {% endif %}
+                    {% if p.status == 'pending' %}
+                    <div class="mt-2 flex-between">
+                        <small class="text-muted">Esta sugerencia no altera automáticamente su evaluación oficial hasta ser revisada.</small>
+                        <a href="/proposals" class="btn btn-warning btn-sm">Revisar en Bandeja</a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted text-center py-3">Aún no hay propuestas de IA generadas para este requisito. Cargue una evidencia para ejecutar el análisis.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar: Evidencias e Historial -->
+    <div>
+        <!-- Card: Evidencias Vinculadas -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Evidencias</h3>
+                <a href="/evidences/upload?target_req={{ req.code }}" class="btn btn-outline btn-sm">+ Vincular</a>
+            </div>
+            {% if mappings %}
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                {% for m in mappings %}
+                <div style="background: var(--bg-main); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div class="flex-between">
+                        <a href="/evidences/{{ m.evidence.id }}"><strong>{{ m.evidence.original_filename }}</strong></a>
+                        <span class="badge badge-category">{{ m.mapped_by }}</span>
+                    </div>
+                    {% if m.reason %}
+                    <small class="text-muted mt-1" style="display: block;">{{ m.reason }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">Sin evidencias vinculadas.</p>
+            {% endif %}
+        </div>
+
+        <!-- Card: Historial de Cambios (AuditLog) -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Historial de Cambios</h3>
+            </div>
+            {% if assessments %}
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                {% for a in assessments %}
+                <div style="font-size: 0.8rem; padding: 0.5rem; background: var(--bg-main); border-radius: var(--radius-sm);">
+                    <div class="flex-between text-muted">
+                        <span>{{ a.evaluated_by }}</span>
+                        <span>{{ a.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                    <div>Cambio de nivel: <strong>{{ a.previous_score }} &rarr; {{ a.new_score }}</strong></div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ a.justification }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">Sin cambios registrados aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración y Estado de Ollama Local{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h1>Configuración y Estado de Ollama Local</h1>
+    <p class="text-muted">Gestión de la conectividad con la IA soberana local y especificación de la Skill declarativa.</p>
+</div>
+
+<div class="grid-2">
+    <!-- Estado de Ollama -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Estado del Servicio Ollama HTTP</h3>
+            {% if status.reachable %}
+            <span class="badge badge-5">&#10003; Servicio Detectado</span>
+            {% else %}
+            <span class="badge badge-1">&#10005; No Conectado</span>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.9rem;">
+            <div>
+                <span class="text-muted" style="display: block;">URL Base Configurada:</span>
+                <code>{{ status.url }}</code>
+            </div>
+
+            <div>
+                <span class="text-muted" style="display: block;">Modelo Configurado:</span>
+                <code>{{ status.configured_model }}</code>
+                {% if status.model_available %}
+                <span class="badge badge-5" style="margin-left: 0.5rem;">Disponible localmente</span>
+                {% else %}
+                <span class="badge badge-3" style="margin-left: 0.5rem;">No descargado (usará modo simulado o pull)</span>
+                {% endif %}
+            </div>
+
+            <div>
+                <span class="text-muted" style="display: block;">Modelos Encontrados en Ollama:</span>
+                {% if status.models %}
+                <ul style="padding-left: 1.25rem; margin-top: 0.25rem;">
+                    {% for m in status.models %}
+                    <li><code>{{ m }}</code></li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <em class="text-muted">Ningún modelo descargado actualmente. Para descargar: <code>ollama pull {{ status.configured_model }}</code></em>
+                {% endif %}
+            </div>
+
+            <div>
+                <span class="text-muted" style="display: block;">Diagnóstico de Conectividad:</span>
+                <p class="mt-1" style="font-size: 0.85rem; color: #D1D5DB;">{{ status.message }}</p>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3" style="font-size: 0.85rem;">
+            <strong>Manejo de Contingencia y Fallback:</strong> Si Ollama no está en ejecución o el modelo no está descargado, SecAuditAI activa automáticamente su motor heurístico de contingencia (modo simulado) para garantizar que todo el sistema, la trazabilidad, las propuestas y las pruebas sigan funcionando sin interrupciones.
+        </div>
+    </div>
+
+    <!-- Skill Declarativa -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Skill Declarativa Cargada</h3>
+            <span class="badge badge-primary">Frontmatter YAML + Markdown</span>
+        </div>
+
+        <div style="font-size: 0.9rem; margin-bottom: 1rem;">
+            <div><span class="text-muted">Nombre de la Skill:</span> <strong>{{ skill_meta.get('name', 'iso27001-evidence-review') }}</strong></div>
+            <div><span class="text-muted">Descripción:</span> {{ skill_meta.get('description', '') }}</div>
+            <div><span class="text-muted">Ruta de origen:</span> <code>{{ config.SKILL_FILE_PATH }}</code></div>
+        </div>
+
+        <h4 class="mb-2">Instrucciones de la Skill:</h4>
+        <div style="max-height: 340px; overflow-y: auto; background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.82rem; font-family: var(--font-mono); white-space: pre-wrap; color: #9CA3AF;">
+{{ skill_body }}
+        </div>
+    </div>
+</div>
+{% endblock %}

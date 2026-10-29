@@ -1,0 +1,34 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Git
+.git/
+.gitignore
+
+# Dev & CI
+*.md
+!README.md
+.env*
+!.env.example
+
+# Local data (se monta como volumen en Docker)
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docs (no necesarias en la imagen)
+docs/
+tests/

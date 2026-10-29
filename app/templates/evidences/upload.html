@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Cargar Evidencia Documental{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="/evidences" class="btn btn-outline btn-sm">&larr; Volver al listado de evidencias</a>
+</div>
+
+<div class="card mx-auto" style="max-width: 780px;">
+    <div class="card-header">
+        <div>
+            <h2>Carga Segura de Evidencia Documental</h2>
+            <p class="text-muted" style="margin-bottom: 0;">Soporta formatos: PDF, DOCX, TXT y Markdown (hasta 15 MB).</p>
+        </div>
+    </div>
+
+    <form method="POST" action="/evidences/upload" enctype="multipart/form-data">
+        <div class="form-group">
+            <label class="form-label">Seleccionar Archivo de Evidencia *</label>
+            <input type="file" name="file" required accept=".pdf,.docx,.txt,.md" class="form-control" style="padding: 0.8rem;">
+            <small class="text-muted">El archivo se validará por extensión, cabecera binaria (magic bytes) y hash SHA-256 para prevenir manipulaciones.</small>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Asociar Directamente a Requisito (Opcional)</label>
+                <select name="target_req_code" class="form-control">
+                    <option value="">-- Sin asociación inicial (General) --</option>
+                    {% for r in requirements %}
+                    <option value="{{ r.code }}" {% if target_req == r.code %}selected{% endif %}>
+                        {{ r.code }} - {{ r.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Asociar Directamente a Control Anexo A (Opcional)</label>
+                <select name="target_ctrl_code" class="form-control">
+                    <option value="">-- Sin asociación inicial (General) --</option>
+                    {% for c in controls %}
+                    <option value="{{ c.code }}" {% if target_ctrl == c.code %}selected{% endif %}>
+                        {{ c.code }} - {{ c.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notas o Contexto de la Evidencia</label>
+            <textarea name="notes" class="form-control" placeholder="Ej. Política aprobada por el comité de seguridad en la sesión ordinaria de Octubre..."></textarea>
+        </div>
+
+        <div class="form-group" style="background: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                <input type="checkbox" name="auto_analyze" value="true" checked style="width: 18px; height: 18px;">
+                <span><strong>Ejecutar análisis preliminar con IA local (Ollama) inmediatamente tras la carga</strong></span>
+            </label>
+            <small class="text-muted" style="display: block; margin-top: 0.25rem;">La IA extraerá el texto, invocará la Skill declarativa y generará propuestas sin modificar evaluaciones oficiales.</small>
+        </div>
+
+        <div class="mt-3 flex-between">
+            <a href="/evidences" class="btn btn-outline">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Subir y Procesar Evidencia</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
