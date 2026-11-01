@@ -52,10 +52,10 @@ docker compose up -d
 |---|---|
 | `app` | Aplicación SecAuditAI (FastAPI + SQLite) en el puerto **8080** |
 | `ollama` | Servidor de IA local Ollama en el puerto **11434** |
-| `ollama-pull` | Descarga el modelo `qwen2.5:4b` automáticamente (solo la primera vez) |
+| `ollama-pull` | Descarga el modelo `qwen3.5:4b` automáticamente (solo la primera vez) |
 
 > [!NOTE]
-> La primera vez que ejecutes `docker compose up -d`, Docker descarga las imágenes base y el modelo de IA (`qwen2.5:4b`, ~2.5 GB). Puede tardar **3 a 10 minutos** dependiendo de tu conexión. Las ejecuciones siguientes son instantáneas.
+> La primera vez que ejecutes `docker compose up -d`, Docker descarga las imágenes base y el modelo de IA (`qwen3.5:4b`, ~2.5 GB). Puede tardar **3 a 10 minutos** dependiendo de tu conexión. Las ejecuciones siguientes son instantáneas.
 
 ### Comandos útiles de Docker
 
@@ -184,7 +184,7 @@ Todas las variables se pueden sobreescribir en la sección `environment` de [`do
 | `UPLOAD_DIR` | `/app/data/uploads` | Directorio de evidencias |
 | `MAX_UPLOAD_SIZE_MB` | `15` | Tamaño máximo por evidencia (MB) |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | URL del servicio Ollama |
-| `OLLAMA_MODEL` | `qwen2.5:4b` | Modelo LLM para análisis |
+| `OLLAMA_MODEL` | `qwen3.5:4b` | Modelo LLM para análisis |
 | `OLLAMA_TIMEOUT_SECONDS` | `180` | Timeout de inferencia |
 | `DEFAULT_ADMIN_USER` | `admin` | Usuario administrador |
 | `DEFAULT_ADMIN_PASSWORD` | `SecAudit2025!` | Contraseña por defecto |
@@ -217,7 +217,7 @@ pip install -r requirements.txt
 cp .env.example .env
 
 # 4. Descargar modelo (opcional)
-ollama pull qwen2.5:4b
+ollama pull qwen3.5:4b
 
 # 5. Iniciar el servidor
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8080 --reload

@@ -45,7 +45,7 @@ ENV APP_NAME=SecAuditAI \
     DATABASE_URL=sqlite:////app/data/db/secauditai.db \
     UPLOAD_DIR=/app/data/uploads \
     OLLAMA_BASE_URL=http://ollama:11434 \
-    OLLAMA_MODEL=qwen2.5:4b \
+    OLLAMA_MODEL=qwen3.5:4b \
     OLLAMA_TIMEOUT_SECONDS=180
 
 EXPOSE 8080

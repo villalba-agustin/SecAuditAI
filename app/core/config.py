@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # Ollama Local Service
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
-    OLLAMA_MODEL: str = "qwen2.5:4b"
+    OLLAMA_MODEL: str = "qwen3.5:4b"
     OLLAMA_TIMEOUT_SECONDS: int = 120
 
     # Skill definition path
