@@ -23,8 +23,7 @@
 8. [📊 Declaración de Aplicabilidad (SoA)](#-guía-de-la-declaración-de-aplicabilidad-soa-y-exportación)
 9. [🛡️ Seguridad y AppSec](#️-seguridad-y-appsec)
 10. [🧠 Skill Declarativa del Agente](#-skill-declarativa-del-agente)
-11. [🎬 Guion de Demostración](#-guion-de-demostración-5-a-8-minutos)
-12. [⚠️ Limitaciones y Próximos Pasos](#️-limitaciones-y-próximos-pasos)
+11. [⚠️ Limitaciones y Próximos Pasos](#️-limitaciones-y-próximos-pasos)
 
 ---
 
@@ -280,20 +279,6 @@ La lógica del agente auditor reside en:
 
 Especificación del agente: [`agents/secauditai.agent.md`](agents/secauditai.agent.md).
 
----
-
-## 🎬 Guion de Demostración (5 a 8 minutos)
-
-Guion completo en [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md):
-
-1. Recorrido por el Dashboard y métricas en tiempo real.
-2. Consulta de cláusulas 4.1 y 4.2 con la Enmienda 1:2024.
-3. Demostración AppSec: rechazo de archivo no válido.
-4. Carga de `data/samples/politica_seguridad_ejemplo.md`.
-5. Ejecución del análisis IA y revisión de hallazgos.
-6. Aprobación y modificación de propuestas (supervisión humana).
-7. Visualización del Anexo A y exportación de la SoA (Excel + CSV).
-8. Ejecución en vivo de las 48 pruebas automatizadas.
 
 ---
 
